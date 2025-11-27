@@ -1,12 +1,12 @@
 {
-	"id": "companion-module-yodeck",
+	"id": "companion-module-Yodeck",
 	"name": "yodeck",
 	"shortname": "yodeck",
 	"description": "Companion module for the Yodeck API",
-	"version": "0.0.0",
+	"version": "0.1.11",
 	"license": "MIT",
-	"repository": "git+https://github.com/bitfocus/companion-module-yodeck.git",
-	"bugs": "https://github.com/bitfocus/companion-module-yodeck/issues",
+	"repository": "git+https://github.com/QuentinfHn/companion-module-Yodeck.git",
+	"bugs": "https://github.com/QuentinfHn/companion-module-Yodeck/issues",
 	"maintainers": [
 		{
 			"name": "Some Body",

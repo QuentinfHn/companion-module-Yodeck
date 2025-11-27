@@ -16,7 +16,7 @@
 	"license": "MIT",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/bitfocus/companion-module-yodeck.git"
+		"url": "git+https://github.com/QuentinfHn/companion-module-Yodeck.git"
 	},
 	"engines": {
 		"node": "^22.20",
