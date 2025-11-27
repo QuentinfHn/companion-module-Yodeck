@@ -1,22 +1,22 @@
 {
-	"name": "your-module-name",
-	"version": "0.1.0",
+	"name": "companion-module-yodeck",
+	"version": "0.1.11",
 	"main": "dist/main.js",
 	"type": "module",
 	"scripts": {
 		"postinstall": "husky",
 		"format": "prettier -w .",
-		"package": "run build && companion-module-build",
-		"build": "rimraf dist && run build:main",
+		"package": "npm run build && companion-module-build",
+		"build": "rimraf dist && npm run build:main",
 		"build:main": "tsc -p tsconfig.build.json",
 		"dev": "tsc -p tsconfig.build.json --watch",
 		"lint:raw": "eslint",
-		"lint": "run lint:raw ."
+		"lint": "npm run lint:raw -- ."
 	},
 	"license": "MIT",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/bitfocus/companion-module-your-module-name.git"
+		"url": "git+https://github.com/bitfocus/companion-module-yodeck.git"
 	},
 	"engines": {
 		"node": "^22.20",
