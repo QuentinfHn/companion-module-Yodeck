@@ -1,6 +1,6 @@
 import { InstanceBase, runEntrypoint, InstanceStatus, SomeCompanionConfigField } from '@companion-module/base'
 import { GetConfigFields, type ModuleConfig } from './config.js'
-import { UpdateVariableDefinitions, buildScreenVariableId } from './variables.js'
+import { UpdateVariableDefinitions } from './variables.js'
 import { UpgradeScripts } from './upgrades.js'
 import { UpdateActions } from './actions.js'
 import { UpdateFeedbacks } from './feedbacks.js'
@@ -281,27 +281,6 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 		}
 
 		this.SCREEN_STATE = state
-	}
-
-	updateScreenPlaybackVariables(): void {
-		const values: Record<string, string> = {}
-		for (const screen of this.CHOICES_SCREENS) {
-			const variableId = buildScreenVariableId(screen.id)
-			const numericId = typeof screen.id === 'number' ? screen.id : Number(screen.id)
-			const playback = Number.isFinite(numericId) ? this.getScreenPlaybackState(Number(numericId)) : undefined
-
-			let value = 'No playback data'
-			if (playback?.active) {
-				const label = playback.active.source_name
-					? playback.active.source_name
-					: `${playback.active.source_type ?? 'content'} ${playback.active.source_id ?? ''}`.trim()
-				value = playback.takeoverActive ? `Takeover: ${label}` : `Now playing: ${label}`
-			}
-
-			values[variableId] = value
-		}
-
-		this.setVariableValues(values)
 	}
 
 	async apiRequest(endpoint: string, options: ApiRequestOptions = {}): Promise<any> {
