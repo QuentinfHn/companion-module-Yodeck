@@ -24,6 +24,7 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 	CHOICES_MEDIA: DropdownChoice[] = []
 	CHOICES_PLAYLISTS: DropdownChoice[] = []
 	CHOICES_LAYOUTS: DropdownChoice[] = []
+	CHOICES_SCHEDULES: DropdownChoice[] = []
 	workspace: number | null = null
 
 	constructor(internal: unknown) {
@@ -72,20 +73,24 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 		this.CHOICES_MEDIA = []
 		this.CHOICES_PLAYLISTS = []
 		this.CHOICES_LAYOUTS = []
+		this.CHOICES_SCHEDULES = []
 
 		try {
-			const [workspacesResult, screensResult, mediaResult, playlistsResult, layoutsResult] = await Promise.allSettled([
-				this.apiRequest('workspaces', { query: { limit: 100, ordering: 'name' } }),
-				this.apiRequest('screens', { query: { limit: 100, ordering: 'name' } }),
-				this.apiRequest('media', { query: { limit: 100, ordering: 'name' } }),
-				this.apiRequest('playlists', { query: { limit: 100, ordering: 'name' } }),
-				this.apiRequest('layouts', { query: { limit: 100, ordering: 'name' } }),
-			])
+			const [workspacesResult, screensResult, mediaResult, playlistsResult, layoutsResult, schedulesResult] =
+				await Promise.allSettled([
+					this.apiRequest('workspaces', { query: { limit: 100, ordering: 'name' } }),
+					this.apiRequest('screens', { query: { limit: 100, ordering: 'name' } }),
+					this.apiRequest('media', { query: { limit: 100, ordering: 'name' } }),
+					this.apiRequest('playlists', { query: { limit: 100, ordering: 'name' } }),
+					this.apiRequest('layouts', { query: { limit: 100, ordering: 'name' } }),
+					this.apiRequest('schedules', { query: { limit: 100, ordering: 'name' } }),
+				])
 
 			const screens = this.extractListFromResult(screensResult, 'screens')
 			const media = this.extractListFromResult(mediaResult, 'media')
 			const playlists = this.extractOptionalList(playlistsResult, 'playlists')
 			const layouts = this.extractOptionalList(layoutsResult, 'layouts')
+			const schedules = this.extractOptionalList(schedulesResult, 'schedules')
 
 			let workspaces: any[] = []
 			if (workspacesResult.status === 'fulfilled') {
@@ -96,7 +101,7 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 			}
 
 			if (workspaces.length === 0) {
-				workspaces = this.deriveWorkspacesFrom(screens, media, playlists, layouts)
+				workspaces = this.deriveWorkspacesFrom(screens, media, playlists, layouts, schedules)
 			}
 
 			this.populateWorkspaceChoices(workspaces)
@@ -119,6 +124,11 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 			this.CHOICES_LAYOUTS = layouts.map((layout: any) => ({
 				id: layout.id,
 				label: layout.name || `Layout ${layout.id}`,
+			}))
+
+			this.CHOICES_SCHEDULES = schedules.map((schedule: any) => ({
+				id: schedule.id,
+				label: schedule.name || `Schedule ${schedule.id}`,
 			}))
 
 			this.updateStatus(InstanceStatus.Ok)
@@ -148,7 +158,13 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 		return []
 	}
 
-	private deriveWorkspacesFrom(screens: any[], media: any[], playlists: any[], layouts: any[]): any[] {
+	private deriveWorkspacesFrom(
+		screens: any[],
+		media: any[],
+		playlists: any[],
+		layouts: any[],
+		schedules: any[],
+	): any[] {
 		const map = new Map<number, string>()
 		for (const screen of screens) {
 			const workspace = screen?.workspace
@@ -170,6 +186,12 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 		}
 		for (const layout of layouts) {
 			const workspace = layout?.workspace
+			if (workspace?.id && !map.has(workspace.id)) {
+				map.set(workspace.id, workspace.name || `Workspace ${workspace.id}`)
+			}
+		}
+		for (const schedule of schedules) {
+			const workspace = schedule?.workspace
 			if (workspace?.id && !map.has(workspace.id)) {
 				map.set(workspace.id, workspace.name || `Workspace ${workspace.id}`)
 			}

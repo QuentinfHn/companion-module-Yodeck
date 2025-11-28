@@ -9,9 +9,10 @@ const MEDIA_TYPE_CHOICES = [
 	{ id: 'document', label: 'Document' },
 ]
 
-const TAKEOVER_TYPES = ['media', 'playlist', 'layout'] as const
-type TakeoverType = (typeof TAKEOVER_TYPES)[number]
-const TAKEOVER_TYPE_CHOICES: { id: TakeoverType; label: string }[] = [
+const CONTENT_TYPES = ['media', 'playlist', 'layout'] as const
+type ContentType = (typeof CONTENT_TYPES)[number]
+type SupportedContentType = ContentType | 'schedule'
+const CONTENT_TYPE_CHOICES: { id: ContentType; label: string }[] = [
 	{ id: 'media', label: 'Media' },
 	{ id: 'playlist', label: 'Playlist' },
 	{ id: 'layout', label: 'Layout' },
@@ -41,7 +42,7 @@ export function UpdateActions(self: ModuleInstance): void {
 					id: 'content_type',
 					type: 'dropdown',
 					label: 'Content type',
-					choices: TAKEOVER_TYPE_CHOICES,
+					choices: CONTENT_TYPE_CHOICES,
 					default: defaultContentType,
 					tooltip: 'Choose whether you want to push a media item, playlist, or layout.',
 				},
@@ -115,6 +116,162 @@ export function UpdateActions(self: ModuleInstance): void {
 					self.log('info', `Started takeover with ${selection.type} ${selection.id} on screen ${screenId}`)
 				} catch (error) {
 					self.log('error', `Failed to push to screen: ${String(error)}`)
+				}
+			},
+		},
+		set_schedule_on_screen: {
+			name: 'Set schedule on screen',
+			description: 'Assigns a schedule to the selected screen so it follows that calendar.',
+			options: [
+				{
+					id: 'screen_id',
+					type: 'dropdown',
+					label: 'Screen',
+					choices: withChoices(self.CHOICES_SCREENS),
+					allowCustom: false,
+					default: self.CHOICES_SCREENS[0]?.id ?? '',
+				},
+				{
+					id: 'schedule_id',
+					type: 'dropdown',
+					label: 'Schedule',
+					choices: withChoices(self.CHOICES_SCHEDULES),
+					allowCustom: false,
+					default: self.CHOICES_SCHEDULES[0]?.id ?? '',
+				},
+			],
+			callback: async (event) => {
+				const screenId = toNumber(event.options.screen_id)
+				const scheduleId = toNumber(event.options.schedule_id)
+				if (screenId === null || scheduleId === null) {
+					self.log('warn', 'Select a screen and schedule before updating the screen schedule')
+					return
+				}
+
+				try {
+					const screenDetail = await self.apiRequest(`screens/${screenId}`)
+					const sourceName = lookupSelectionLabel(self, { type: 'schedule', id: scheduleId })
+					const payload: Record<string, any> = {
+						screen_content: {
+							source_type: 'schedule',
+							source_id: scheduleId,
+						},
+					}
+
+					if (sourceName) {
+						payload.screen_content.source_name = sourceName
+					}
+
+					if (screenDetail?.workspace?.id) {
+						payload.workspace = {
+							id: screenDetail.workspace.id,
+							name: screenDetail.workspace.name ?? '',
+						}
+					}
+
+					await self.apiRequest(`screens/${screenId}`, {
+						method: 'PATCH',
+						body: JSON.stringify(payload),
+					})
+
+					await self.apiRequest(`screens/${screenId}/push`, {
+						method: 'POST',
+					})
+
+					self.log('info', `Assigned schedule ${scheduleId} to screen ${screenId}`)
+				} catch (error) {
+					self.log('error', `Failed to assign schedule to screen: ${String(error)}`)
+				}
+			},
+		},
+		set_default_content: {
+			name: 'Set default content on screen',
+			description: "Updates the screen's default media/playlist/layout so it shows when no schedule runs.",
+			options: [
+				{
+					id: 'screen_id',
+					type: 'dropdown',
+					label: 'Screen',
+					choices: withChoices(self.CHOICES_SCREENS),
+					allowCustom: false,
+					default: self.CHOICES_SCREENS[0]?.id ?? '',
+				},
+				{
+					id: 'content_type',
+					type: 'dropdown',
+					label: 'Content type',
+					choices: CONTENT_TYPE_CHOICES,
+					default: defaultContentType,
+				},
+				{
+					id: 'media_id',
+					type: 'dropdown',
+					label: 'Media',
+					choices: withChoices(self.CHOICES_MEDIA),
+					allowCustom: false,
+					default: self.CHOICES_MEDIA[0]?.id ?? '',
+					isVisible: (options) => options.content_type === 'media',
+				},
+				{
+					id: 'playlist_id',
+					type: 'dropdown',
+					label: 'Playlist',
+					choices: withChoices(self.CHOICES_PLAYLISTS),
+					allowCustom: false,
+					default: self.CHOICES_PLAYLISTS[0]?.id ?? '',
+					isVisible: (options) => options.content_type === 'playlist',
+				},
+				{
+					id: 'layout_id',
+					type: 'dropdown',
+					label: 'Layout',
+					choices: withChoices(self.CHOICES_LAYOUTS),
+					allowCustom: false,
+					default: self.CHOICES_LAYOUTS[0]?.id ?? '',
+					isVisible: (options) => options.content_type === 'layout',
+				},
+			],
+			callback: async (event) => {
+				const screenId = toNumber(event.options.screen_id)
+				const selection = extractContentSelection(event.options)
+				if (screenId === null || selection === null) {
+					self.log('warn', 'Select a screen and valid content before updating default content')
+					return
+				}
+
+				try {
+					const screenDetail = await self.apiRequest(`screens/${screenId}`)
+					const sourceName = lookupSelectionLabel(self, selection)
+					const payload: Record<string, any> = {
+						screen_content: {
+							source_type: selection.type,
+							source_id: selection.id,
+						},
+					}
+
+					if (sourceName) {
+						payload.screen_content.source_name = sourceName
+					}
+
+					if (screenDetail?.workspace?.id) {
+						payload.workspace = {
+							id: screenDetail.workspace.id,
+							name: screenDetail.workspace.name ?? '',
+						}
+					}
+
+					await self.apiRequest(`screens/${screenId}`, {
+						method: 'PATCH',
+						body: JSON.stringify(payload),
+					})
+
+					await self.apiRequest(`screens/${screenId}/push`, {
+						method: 'POST',
+					})
+
+					self.log('info', `Updated default content to ${selection.type} ${selection.id} on screen ${screenId}`)
+				} catch (error) {
+					self.log('error', `Failed to update default content: ${String(error)}`)
 				}
 			},
 		},
@@ -255,8 +412,8 @@ function buildMediaArguments(mediaType: string, url: string, streamFromUrl: bool
 	}
 }
 
-function extractContentSelection(options: Record<string, any>): { type: TakeoverType; id: number } | null {
-	const contentType = isTakeoverType(options?.content_type) ? options.content_type : null
+function extractContentSelection(options: Record<string, any>): { type: ContentType; id: number } | null {
+	const contentType = isContentType(options?.content_type) ? options.content_type : null
 	if (!contentType) {
 		return null
 	}
@@ -267,13 +424,29 @@ function extractContentSelection(options: Record<string, any>): { type: Takeover
 	return { type: contentType, id: contentId }
 }
 
-function inferDefaultContentType(self: ModuleInstance): TakeoverType {
+function lookupSelectionLabel(
+	self: ModuleInstance,
+	selection: { type: SupportedContentType; id: number },
+): string | undefined {
+	const choicesMap: Record<SupportedContentType, { id: string | number; label: string }[]> = {
+		media: self.CHOICES_MEDIA,
+		playlist: self.CHOICES_PLAYLISTS,
+		layout: self.CHOICES_LAYOUTS,
+		schedule: self.CHOICES_SCHEDULES,
+	}
+
+	const list = choicesMap[selection.type] ?? []
+	const match = list.find((choice) => Number(choice.id) === selection.id)
+	return match?.label
+}
+
+function inferDefaultContentType(self: ModuleInstance): ContentType {
 	if (self.CHOICES_MEDIA.length > 0) return 'media'
 	if (self.CHOICES_PLAYLISTS.length > 0) return 'playlist'
 	if (self.CHOICES_LAYOUTS.length > 0) return 'layout'
 	return 'media'
 }
 
-function isTakeoverType(value: unknown): value is TakeoverType {
-	return typeof value === 'string' && TAKEOVER_TYPES.includes(value as TakeoverType)
+function isContentType(value: unknown): value is ContentType {
+	return typeof value === 'string' && CONTENT_TYPES.includes(value as ContentType)
 }
