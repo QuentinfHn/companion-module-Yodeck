@@ -10,6 +10,16 @@ type DropdownChoice = {
 	label: string
 }
 
+export type ScreenPlaybackState = {
+	screenName: string
+	takeoverActive: boolean
+	active?: {
+		source_type?: string
+		source_id?: number
+		source_name?: string
+	}
+}
+
 type HeaderCollection = Record<string, string>
 
 interface ApiRequestOptions extends RequestInit {
@@ -25,6 +35,7 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 	CHOICES_PLAYLISTS: DropdownChoice[] = []
 	CHOICES_LAYOUTS: DropdownChoice[] = []
 	CHOICES_SCHEDULES: DropdownChoice[] = []
+	SCREEN_STATE: Map<number, ScreenPlaybackState> = new Map()
 	workspace: number | null = null
 
 	constructor(internal: unknown) {
@@ -110,6 +121,8 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 				id: screen.id,
 				label: screen.name || `Screen ${screen.id}`,
 			}))
+
+			this.updateScreenPlaybackState(screens)
 
 			this.CHOICES_MEDIA = media.map((item: any) => ({
 				id: item.id,
@@ -223,6 +236,51 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 			return data.results
 		}
 		return []
+	}
+
+	getScreenPlaybackState(screenId: number): ScreenPlaybackState | undefined {
+		return this.SCREEN_STATE.get(screenId)
+	}
+
+	private updateScreenPlaybackState(screens: any[]): void {
+		const state = new Map<number, ScreenPlaybackState>()
+		for (const screen of screens) {
+			if (typeof screen?.id !== 'number') {
+				continue
+			}
+
+			const playbackState: ScreenPlaybackState = {
+				screenName: screen?.name || `Screen ${screen.id}`,
+				takeoverActive: false,
+			}
+
+			const takeover = screen?.takeover_content
+			const baseContent = screen?.screen_content
+
+			if (takeover?.source_id && takeover?.source_type) {
+				playbackState.takeoverActive = true
+				playbackState.active = {
+					source_id: Number(takeover.source_id),
+					source_type: String(takeover.source_type),
+					source_name: takeover.source_name ? String(takeover.source_name) : undefined,
+				}
+
+				state.set(screen.id, playbackState)
+				continue
+			}
+
+			if (baseContent?.source_id && baseContent?.source_type) {
+				playbackState.active = {
+					source_id: Number(baseContent.source_id),
+					source_type: String(baseContent.source_type),
+					source_name: baseContent.source_name ? String(baseContent.source_name) : undefined,
+				}
+			}
+
+			state.set(screen.id, playbackState)
+		}
+
+		this.SCREEN_STATE = state
 	}
 
 	async apiRequest(endpoint: string, options: ApiRequestOptions = {}): Promise<any> {

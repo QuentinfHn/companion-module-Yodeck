@@ -27,6 +27,12 @@ If the API key is missing or invalid the instance status will show **Bad Config*
 
 Each action exposes dropdowns that are auto-populated from your Yodeck account. If a list is empty, confirm that your API token has access to that resource and press **Reload Variables** or **Save** on the instance to refresh.
 
+## Feedback
+
+| Feedback                       | Purpose                                                                                                                                                                               |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Screen now playing content** | Select a screen and Companion will show the title of the content currently playing. If a takeover is active the feedback highlights the button and prefixes the text with "Takeover". |
+
 ## Tips
 
 - If you add or rename content in Yodeck, click **Save** on the instance or trigger the **Reload Variables** button to refresh the cached lists.
