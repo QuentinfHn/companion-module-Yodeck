@@ -27,11 +27,11 @@ If the API key is missing or invalid the instance status will show **Bad Config*
 
 Each action exposes dropdowns that are auto-populated from your Yodeck account. If a list is empty, confirm that your API token has access to that resource and press **Reload Variables** or **Save** on the instance to refresh.
 
-## Feedback
+## Variables
 
-| Feedback                       | Purpose                                                                                                                                                                               |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Screen now playing content** | Select a screen and Companion will show the title of the content currently playing. If a takeover is active the feedback highlights the button and prefixes the text with "Takeover". |
+| Variable ID format                  | Purpose                                                                                                                                                                                                                          |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `screen_<screenId>_current_content` | Shows what is currently playing on the selected screen (e.g. `screen_123_current_content`). Values look like `Now playing: Layout 42` or `Takeover: Alert Playlist`. Use these variables in button labels, presets, or triggers. |
 
 ## Tips
 
