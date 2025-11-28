@@ -10,6 +10,8 @@ type DropdownChoice = {
 	label: string
 }
 
+const PLAYBACK_REFRESH_INTERVAL_MS = 30000
+
 export type ScreenPlaybackState = {
 	screenName: string
 	takeoverActive: boolean
@@ -36,6 +38,7 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 	CHOICES_LAYOUTS: DropdownChoice[] = []
 	CHOICES_SCHEDULES: DropdownChoice[] = []
 	SCREEN_STATE: Map<number, ScreenPlaybackState> = new Map()
+	playbackInterval: NodeJS.Timeout | null = null
 	workspace: number | null = null
 
 	constructor(internal: unknown) {
@@ -46,15 +49,18 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 		this.config = config
 		this.updateStatus(InstanceStatus.Connecting)
 		await this.updateVariables()
+		this.schedulePlaybackPolling()
 	}
 
 	async destroy(): Promise<void> {
+		this.clearPlaybackPolling()
 		this.log('debug', 'destroy')
 	}
 
 	async configUpdated(config: ModuleConfig): Promise<void> {
 		this.config = config
 		await this.updateVariables()
+		this.schedulePlaybackPolling()
 	}
 
 	getConfigFields(): SomeCompanionConfigField[] {
@@ -123,6 +129,7 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 			}))
 
 			this.updateScreenPlaybackState(screens)
+			this.updateScreenPlaybackVariables()
 
 			this.CHOICES_MEDIA = media.map((item: any) => ({
 				id: item.id,
@@ -302,6 +309,43 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 		}
 
 		this.setVariableValues(values)
+	}
+
+	private schedulePlaybackPolling(): void {
+		this.clearPlaybackPolling()
+		if (!this.config.apiKey) {
+			return
+		}
+
+		this.playbackInterval = setInterval(() => {
+			this.refreshScreenPlaybackSnapshot().catch((error) => {
+				this.log('debug', `Failed to refresh playback snapshot: ${String(error)}`)
+			})
+		}, PLAYBACK_REFRESH_INTERVAL_MS)
+
+		void this.refreshScreenPlaybackSnapshot()
+	}
+
+	private clearPlaybackPolling(): void {
+		if (this.playbackInterval) {
+			clearInterval(this.playbackInterval)
+			this.playbackInterval = null
+		}
+	}
+
+	private async refreshScreenPlaybackSnapshot(): Promise<void> {
+		if (!this.config.apiKey) {
+			return
+		}
+
+		try {
+			const response = await this.apiRequest('screens', { query: { limit: 100, ordering: 'name' } })
+			const screens = this.extractResults(response)
+			this.updateScreenPlaybackState(screens)
+			this.updateScreenPlaybackVariables()
+		} catch (error) {
+			this.log('debug', `Unable to fetch screen playback state: ${String(error)}`)
+		}
 	}
 
 	async apiRequest(endpoint: string, options: ApiRequestOptions = {}): Promise<any> {

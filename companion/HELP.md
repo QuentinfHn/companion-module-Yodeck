@@ -29,9 +29,9 @@ Each action exposes dropdowns that are auto-populated from your Yodeck account. 
 
 ## Variables
 
-| Variable ID format                  | Purpose                                                                                                                                                                                                                          |
-| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `screen_<screenId>_current_content` | Shows what is currently playing on the selected screen (e.g. `screen_123_current_content`). Values look like `Now playing: Layout 42` or `Takeover: Alert Playlist`. Use these variables in button labels, presets, or triggers. |
+| Variable ID format                  | Purpose                                                                                                                                                                                                                                                                        |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `screen_<screenId>_current_content` | Shows what is currently playing on the selected screen (e.g. `screen_123_current_content`). Values look like `Now playing: Layout 42` or `Takeover: Alert Playlist`. Use these variables in button labels, presets, or triggers. They refresh automatically every ~30 seconds. |
 
 ## Tips
 
